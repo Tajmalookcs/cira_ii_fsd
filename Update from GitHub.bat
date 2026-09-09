@@ -58,27 +58,16 @@ if not defined PY (
     exit /b 1
 )
 
-REM ---------- 2. Access token ---------------------------------
-REM The token is kept in its own file, never inside this script,
-REM so this script can be copied or shared without leaking it.
-if not exist "%TOKENFILE%" (
-    echo   The access token file is missing:
-    echo       %TOKENFILE%
-    echo.
-    echo   Create it with Notepad, put ONLY the token on the first
-    echo   line, and save. Then run this file again.
-    echo.
-    echo   If the repository is public you can instead create the
-    echo   file empty - no token is needed to download a public
-    echo   repository.
-    echo.
-    pause
-    exit /b 1
-)
-
+REM ---------- 2. Access token (only needed for a private repo) -
+REM Downloading a PUBLIC repository needs no credential at all, so
+REM a missing token file is normal and not an error. If the token
+REM file exists it is used, which covers the repository being made
+REM private later. The token is never written inside this script.
 set "TOKEN="
-for /f "usebackq delims=" %%a in ("%TOKENFILE%") do (
-    if not defined TOKEN set "TOKEN=%%a"
+if exist "%TOKENFILE%" (
+    for /f "usebackq delims=" %%a in ("%TOKENFILE%") do (
+        if not defined TOKEN set "TOKEN=%%a"
+    )
 )
 
 if defined TOKEN (
@@ -86,9 +75,14 @@ if defined TOKEN (
     echo   Using the access token from github_token.txt
 ) else (
     set "REPO_URL=https://%REPO_HOST%"
-    echo   No token supplied - treating the repository as public
+    echo   Public repository - no access token needed
 )
 set "CLEAN_URL=https://%REPO_HOST%"
+
+REM Git output is filtered so a token can never appear on screen.
+REM With no token, a sentinel is used so findstr still has something
+REM to search for - an empty search string is rejected by findstr.
+if defined TOKEN (set "MASK=!TOKEN!") else (set "MASK=__no_token_in_use__")
 echo.
 
 REM ---------- 3. Stop the server so files are not locked -------
@@ -114,11 +108,12 @@ if exist "%TARGET%\db.sqlite3" (
 
 echo   First installation - downloading the project...
 echo.
-git clone --branch %BRANCH% "!REPO_URL!" "%TARGET%" 2>&1 | findstr /v /c:"!TOKEN!"
+git clone --branch %BRANCH% "!REPO_URL!" "%TARGET%" 2>&1 | findstr /v /c:"!MASK!"
 if not exist "%TARGET%\.git" (
     echo.
     echo   DOWNLOAD FAILED.
-    echo   Check the token in github_token.txt and your network.
+    echo   Check your network connection. If the repository has been
+    echo   made private, run "Save GitHub Token.bat" first.
     echo.
     pause
     exit /b 1
@@ -132,11 +127,12 @@ goto :environment
 echo   Updating the project...
 echo.
 git -C "%TARGET%" remote set-url origin "%CLEAN_URL%"
-git -C "%TARGET%" fetch "!REPO_URL!" %BRANCH% 2>&1 | findstr /v /c:"!TOKEN!"
+git -C "%TARGET%" fetch "!REPO_URL!" %BRANCH% 2>&1 | findstr /v /c:"!MASK!"
 if errorlevel 1 (
     echo.
     echo   COULD NOT REACH GITHUB.
-    echo   Check the token in github_token.txt and your network.
+    echo   Check your network connection. If the repository has been
+    echo   made private, run "Save GitHub Token.bat" first.
     echo.
     pause
     exit /b 1
