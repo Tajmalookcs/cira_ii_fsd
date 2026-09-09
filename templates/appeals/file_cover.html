@@ -1,0 +1,266 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Cover &mdash; {{ appeal.appeal_no }}</title>
+    <style>
+        /* Standalone by design: this sheet is pasted on the file jacket, so it
+           carries none of the application chrome.
+
+           The two registers keep their OWN long-standing layouts - they are
+           deliberately not made to match each other. */
+        @page { size: A4 portrait; margin: 12mm; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Times New Roman", Georgia, serif;
+            font-size: 15px;
+            color: #000;
+            background: #eee;
+            margin: 0;
+            padding: 18px;
+        }
+
+        .sheet {
+            width: 186mm;
+            margin: 0 auto;
+            background: #fff;
+            padding: 8mm 10mm 10mm;
+            position: relative;
+        }
+
+        .appeal-ref {
+            position: absolute;
+            top: 6mm;
+            right: 10mm;
+            font-size: 12px;
+            letter-spacing: .3px;
+        }
+
+        .doc-title { text-align: center; margin: 4mm 0 5mm; }
+        .doc-title .line1 { font-size: 24px; font-weight: 700; line-height: 1.15; }
+        .doc-title .line2 { font-size: 20px; font-weight: 700; text-decoration: underline; }
+
+        .frame { border: 1.5px solid #000; padding: 6mm 7mm; }
+
+        .row { margin-bottom: 4.5mm; line-height: 1.5; }
+        .lbl { font-weight: 700; }
+        .val { text-decoration: underline; }
+
+        .vs { text-align: center; font-weight: 700; margin: 3mm 0; letter-spacing: 1px; }
+
+        .received { text-align: center; font-weight: 700; margin: 5mm 0 4mm; }
+
+        table.limits { width: 100%; border-collapse: collapse; margin: 4mm 0 5mm; }
+        table.limits td {
+            border: 1.5px solid #000;
+            padding: 3mm;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+        table.limits td.date { text-align: center; white-space: nowrap; }
+
+        .muted { font-size: 12px; }
+
+        /* ---- Income Tax cover: no outer frame, two blocks then a list ------ */
+        .it-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10mm;
+            margin-bottom: 3mm;
+        }
+        .it-top .left { line-height: 1.7; }
+        .it-top .right { line-height: 1.7; text-align: left; }
+        .late { font-weight: 700; font-size: 17px; text-decoration: underline; }
+        .it-line { line-height: 1.75; }
+        .it-line .lbl { font-weight: 700; }
+        .it-indent { padding-left: 24mm; }
+
+        /* Screen-only toolbar */
+        .toolbar {
+            max-width: 186mm;
+            margin: 0 auto 12px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+        .toolbar button, .toolbar a {
+            font-size: 13px;
+            padding: 7px 14px;
+            border-radius: 4px;
+            border: 1px solid #00693e;
+            background: #00693e;
+            color: #fff;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .toolbar a.secondary { background: #fff; color: #00693e; }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .toolbar { display: none !important; }
+            .sheet { width: auto; margin: 0; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <a class="secondary" href="{% url cfg.detail_url appeal.pk %}">&larr; Back to Record</a>
+    <button onclick="window.print()">Print File Cover</button>
+</div>
+
+<div class="sheet">
+
+{% if register == "sales" %}
+    {# ============ Sales Tax: framed, as the office's own cover ============ #}
+    <div class="appeal-ref">{{ appeal.appeal_no }}</div>
+
+    <div class="doc-title">
+        <div class="line1">Sales Tax</div>
+        <div class="line2">(APPEALS-II)</div>
+    </div>
+
+    <div class="frame">
+        <div class="row">
+            <span class="lbl">Section / Branch</span>
+            &nbsp;&nbsp;&nbsp;
+            <span class="val">{{ cfg.section_branch }}</span>
+        </div>
+
+        <div class="row">
+            <span class="lbl">NTN/STRN:</span>
+            <span class="val">{{ appeal.ntn|default:"—" }}{% if appeal.strn %}/{{ appeal.strn }}{% endif %}</span>
+            &nbsp;&nbsp;
+            <span class="lbl">TAX PERIOD:</span> {{ appeal.tax_period|default:"0" }}
+            &nbsp;&nbsp;
+            <span class="lbl">Disputed Amount:</span>
+            Rs.{{ appeal.sales_tax_involved|floatformat:0|intcomma }}/-
+        </div>
+
+        <div class="row">
+            <span class="lbl">Appellant:</span>
+            &nbsp;&nbsp;
+            <span class="val">{{ appeal.appellant_name }}</span>
+        </div>
+
+        <div class="row">
+            <span class="lbl">Address:</span>
+            &nbsp;&nbsp;
+            <span class="val">{{ appeal.address|default:"—" }}{% if appeal.city %}, {{ appeal.city }}{% endif %}</span>
+        </div>
+
+        <div class="vs">VS</div>
+
+        <div class="row">{{ appeal.passing_officer_name|default:"—" }}</div>
+
+        <div class="row">
+            <span class="lbl">Sales Tax Order-in-Original No.</span>{{ appeal.oio_no|default:"—" }}
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span class="lbl">Dated:</span> {{ appeal.oio_date|date:"d-M-y"|default:"—" }}
+        </div>
+
+        <div class="row">
+            <span class="lbl">[=] Service Date=</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            {{ appeal.date_of_service|date:"d-M-y"|default:"—" }}
+        </div>
+
+        <div class="received">
+            Appeal Received on = {{ appeal.date_of_institution|date:"d-M-y" }}
+        </div>
+
+        <table class="limits">
+            <tr>
+                <td>Expiry of<br>120 Days</td>
+                <td class="date">{{ appeal.first_expiry_120|date:"d-M-y"|default:"—" }}</td>
+                <td>Expiry of Extended<br>&ndash; 60 Days:</td>
+                <td class="date">{{ appeal.second_expiry_180|date:"d-M-y"|default:"—" }}</td>
+            </tr>
+        </table>
+
+        <div class="row">
+            <span class="lbl">Zone</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span class="val">{{ appeal.zone.name|default:"—" }}{% if appeal.unit %} &mdash; {{ appeal.unit.name }}{% endif %}</span>
+        </div>
+
+        <div class="row">
+            <span class="lbl">Name of A.R</span>
+            &nbsp;&nbsp;
+            <span class="val">{{ appeal.ar_name|default:"—" }}{% if appeal.ar_type %} {{ appeal.ar_type }}{% endif %}</span>
+            {% if appeal.ar_contact_no %}<br><span class="muted">{{ appeal.ar_contact_no }}</span>{% endif %}
+        </div>
+    </div>
+
+{% else %}
+    {# ====== Income Tax: unframed, IRIS layout as the office's own cover ==== #}
+    <div class="it-top">
+        <div class="left">
+            <div class="late">
+                {% if appeal.filing_dates_inconsistent %}
+                    CHECK DATES
+                {% elif appeal.filed_late %}
+                    LATE:- {{ appeal.filing_delay_days }}-DAYS
+                {% else %}
+                    IN TIME:- {{ appeal.days_taken_to_file }}-DAYS
+                {% endif %}
+            </div>
+            <div><span class="lbl">120 Days</span> {{ appeal.first_expiry_120|date:"d-M-y"|default:"—" }}</div>
+            <div><span class="lbl">60 Day</span> &nbsp; {{ appeal.second_expiry_180|date:"d-M-y"|default:"—" }}</div>
+        </div>
+
+        <div class="right">
+            <div>Add.CIR/DCIR/ACIR/IRO.</div>
+            <div>Date of Order/ {{ appeal.date_of_assessment|date:"d-M-y"|default:"—" }}</div>
+        </div>
+    </div>
+
+    <div class="doc-title">
+        <div class="line1">Income Tax</div>
+        <div class="line2">APPEALS-II (IRIS)</div>
+    </div>
+
+    <div class="it-line" style="text-align:center;margin-bottom:5mm;">
+        <div><span class="lbl">A.No.</span> <span class="val">{{ appeal.appeal_no }}</span></div>
+        <div><span class="lbl">Dated.</span> {{ appeal.date_of_institution|date:"d-M-Y" }}</div>
+        <div><span class="lbl">U/s.</span> <span class="val">{{ appeal.order_section|default:"—" }}</span></div>
+    </div>
+
+    <div class="it-line">
+        <div><span class="lbl">Tax Year</span></div>
+        <div style="margin-bottom:4mm;">{{ appeal.tax_year|default:"—" }}</div>
+
+        <div><span class="lbl">Decided By:-</span></div>
+        <div style="margin-bottom:4mm;">{{ appeal.officer_name|default:"—" }}</div>
+
+        <div style="margin-bottom:4mm;">
+            {{ appeal.zone.name|default:"—" }}{% if appeal.unit %}, {{ appeal.unit.name }}{% endif %}, RTO, Faisalabad
+        </div>
+
+        <div><span class="lbl">CNIC/NTN#</span> {{ appeal.cnic|default:appeal.ntn|default:"—" }}</div>
+        <div><span class="lbl">Income Assessed:-</span> {{ appeal.income_assessed|floatformat:0|intcomma }}/-</div>
+        <div style="margin-bottom:4mm;">
+            <span class="lbl">Revenue Involved:-</span> {{ appeal.revenue_involved|floatformat:0|intcomma }}/-
+        </div>
+
+        <div><span class="lbl">Appellant:-</span></div>
+        <div class="it-indent"><strong>{{ appeal.appellant_name }}</strong></div>
+        <div class="it-indent">{{ appeal.address|default:"—" }}{% if appeal.city %}, {{ appeal.city }}{% endif %}</div>
+        {% if appeal.ar_name %}
+        <div style="margin-top:4mm;"><span class="lbl">Advocate:-</span> {{ appeal.ar_name }}</div>
+        {% endif %}
+    </div>
+{% endif %}
+
+</div>
+
+<script>
+    if (new URLSearchParams(location.search).get("print") === "1") {
+        window.addEventListener("load", () => window.print());
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+*.log
+*.pyc
+*.sqlite3
+.env
+__pycache__/
+backups/
+db.sqlite3
+logs/
+media/
+secret_key.txt
+staticfiles/
+venv/

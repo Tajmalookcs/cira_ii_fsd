@@ -1,0 +1,248 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Call Proof &mdash; {{ appeal.appeal_no }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 16mm 18mm; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Times New Roman", Georgia, serif;
+            font-size: 15.5px;
+            line-height: 1.55;
+            color: #000;
+            background: #eee;
+            margin: 0;
+            padding: 18px;
+        }
+
+        /* A4 is 210mm x 297mm. On screen the whole page is drawn, including
+           its margins; when printing, @page supplies the margin instead. */
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #fff;
+            padding: 16mm 18mm;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+        }
+
+        /* --- Letterhead ---------------------------------------------------- */
+        .letterhead { text-align: center; }
+        .letterhead .crests {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6mm;
+            margin-bottom: 5mm;
+        }
+        /* Each mark has a different aspect ratio, so they are sized to look
+           balanced rather than to a single height. */
+        .letterhead .crests img { width: auto; display: block; }
+        .letterhead .crests .crest-fbr { height: 20mm; }
+        .letterhead .crests .crest-gop { height: 27mm; }
+        .letterhead .crests .crest-irs { height: 17mm; }
+        .letterhead .crests .slot {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 27mm;
+        }
+        .letterhead .crests .slot:first-child { justify-content: flex-start; }
+        .letterhead .crests .slot:last-child { justify-content: flex-end; }
+
+        .letterhead-img { width: 100%; height: auto; display: block; margin-bottom: 3mm; }
+
+        .office-line1 { font-size: 16px; font-weight: 700; }
+        .office-line2 { font-size: 16px; font-weight: 700; }
+
+        .rule {
+            border: 0;
+            border-top: 2.5px dotted #000;
+            margin: 2.5mm 0 6mm;
+        }
+
+        /* --- Reference line ------------------------------------------------ */
+        .refline {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 10mm;
+        }
+        .refline .no { }
+        .refline .no .blank {
+            display: inline-block;
+            min-width: 28mm;
+            border-bottom: 1px solid #000;
+        }
+
+        /* --- Addressee ----------------------------------------------------- */
+        .to { margin-bottom: 3mm; }
+        .addressee { margin: 0 0 9mm 22mm; line-height: 1.5; }
+
+        /* --- Subject ------------------------------------------------------- */
+        .subject-block {
+            display: flex;
+            gap: 6mm;
+            margin-bottom: 7mm;
+        }
+        .subject-block .k { font-weight: 400; flex: 0 0 20mm; }
+        .subject-block .v {
+            font-weight: 700;
+            text-transform: uppercase;
+            text-decoration: underline;
+            text-align: justify;
+            text-underline-offset: 2px;
+        }
+
+        /* --- Body ---------------------------------------------------------- */
+        .para {
+            display: flex;
+            gap: 6mm;
+            margin-bottom: 5mm;
+            text-align: justify;
+        }
+        .para .n { flex: 0 0 8mm; }
+        .para .t { flex: 1; text-align: justify; }
+        .para .t .indent { padding-left: 12mm; }
+
+        .lead { margin: 0 0 6mm 22mm; }
+
+        /* --- Signature ----------------------------------------------------- */
+        .signature {
+            margin-top: 22mm;
+            text-align: right;
+            padding-right: 12mm;
+            line-height: 1.4;
+        }
+        .signature .space { height: 16mm; }
+
+        .copy-to { margin-top: 16mm; font-size: 14px; }
+        .copy-to ol { margin: 2mm 0 0 6mm; padding-left: 6mm; }
+
+        /* --- Screen-only toolbar ------------------------------------------- */
+        .toolbar {
+            max-width: 210mm;
+            margin: 0 auto 12px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+        .toolbar button, .toolbar a {
+            font-size: 13px;
+            padding: 7px 14px;
+            border-radius: 4px;
+            border: 1px solid #00693e;
+            background: #00693e;
+            color: #fff;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .toolbar a.secondary { background: #fff; color: #00693e; }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .toolbar { display: none !important; }
+            .sheet {
+                width: 174mm;          /* 210mm less the 18mm @page margins */
+                min-height: 0;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <a class="secondary" href="{% url cfg.detail_url appeal.pk %}">&larr; Back to Record</a>
+    <button onclick="window.print()">Print Letter</button>
+</div>
+
+<div class="sheet">
+
+    <div class="letterhead">
+        {% if OFFICE_LETTERHEAD %}
+            <img class="letterhead-img" src="{% static OFFICE_LETTERHEAD %}" alt="">
+        {% else %}
+            <div class="crests">
+                <div class="slot">
+                    {% if CREST_FBR %}<img class="crest-fbr" src="{% static CREST_FBR %}" alt="FBR">{% endif %}
+                </div>
+                <div class="slot">
+                    {% if CREST_GOP %}<img class="crest-gop" src="{% static CREST_GOP %}" alt="Government of Pakistan">{% endif %}
+                </div>
+                <div class="slot">
+                    {% if CREST_IRS %}
+                        <img class="crest-irs" src="{% static CREST_IRS %}" alt="Inland Revenue Service">
+                    {% else %}
+                        <span style="font-weight:700;font-size:15px;line-height:1.2;text-align:right;">
+                            Inland<br>Revenue<br>Service
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="office-line1">Office of the Commissioner Inland Revenue (Appeals-II),</div>
+            <div class="office-line2">Regional Tax Office Building, Opposite Allied Hospital, Jail Road, Faisalabad</div>
+        {% endif %}
+    </div>
+
+    <hr class="rule">
+
+    <div class="refline">
+        <div class="no">No. <span class="blank">&nbsp;</span></div>
+        <div class="dated">Dated: {{ today|date:"d-m-Y" }}</div>
+    </div>
+
+    <div class="to">To,</div>
+    <div class="addressee">
+        The Unit Officer<br>
+        {% if appeal.unit %}{{ appeal.unit.name }}, {% endif %}{{ appeal.zone.name|default:"________________" }},<br>
+        RTO, Faisalabad
+    </div>
+
+    <div class="subject-block">
+        <div class="k">Subject:</div>
+        <div class="v">{{ subject }}</div>
+    </div>
+
+    <div class="lead">Please refer to the subject cited above.</div>
+
+    <div class="para">
+        <div class="n">2.</div>
+        <div class="t">
+            During the hearing in the above-titled case, the learned counsel assailed
+            that the order has not been served upon the appellant in time or received
+            late. You are therefore requested to provide proof of service i.e.
+            electronic /ums/courier or through notice server, within seven days of the
+            receipt of this letter, so that the case condonation request of the
+            appellant could be decided judiciously before going into the merits of the
+            case.
+        </div>
+    </div>
+
+    <div class="para">
+        <div class="n">3.</div>
+        <div class="t">An early response will be highly appreciated.</div>
+    </div>
+
+    <div class="signature">
+        <div class="space"></div>
+        <div>For Commissioner-IR</div>
+        <div>Appeals-II</div>
+    </div>
+
+</div>
+
+<script>
+    if (new URLSearchParams(location.search).get("print") === "1") {
+        window.addEventListener("load", () => window.print());
+    }
+</script>
+</body>
+</html>
