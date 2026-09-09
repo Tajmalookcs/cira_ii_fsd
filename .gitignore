@@ -5,6 +5,7 @@
 __pycache__/
 backups/
 db.sqlite3
+github_token.txt
 logs/
 media/
 secret_key.txt
