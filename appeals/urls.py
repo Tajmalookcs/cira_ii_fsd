@@ -36,5 +36,8 @@ urlpatterns = [
     path("income-tax/<int:pk>/edit/", views.income_tax_update, name="income_tax_update"),
     path("income-tax/<int:pk>/delete/", views.income_tax_delete, name="income_tax_delete"),
     # AJAX
+    path("sales-tax/mpr/", views.sales_tax_mpr, name="sales_tax_mpr"),
+    path("income-tax/mpr/", views.income_tax_mpr, name="income_tax_mpr"),
+    path("mpr/letter/", views.mpr_letter, name="mpr_letter"),
     path("api/units/<int:zone_id>/", views.units_for_zone, name="units_for_zone"),
 ]

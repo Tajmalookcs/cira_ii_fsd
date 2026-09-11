@@ -60,6 +60,20 @@
                 <a class="nav-link {% if 'income_tax' in request.resolver_match.url_name %}active{% endif %}"
                    href="{% url 'appeals:income_tax_list' %}"><i class="bi bi-cash-coin me-1"></i> Income Tax Appeals</a>
             </li>
+            {% if user.is_admin %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle {% if 'mpr' in request.resolver_match.url_name %}active{% endif %}"
+                   href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-file-earmark-bar-graph me-1"></i> MPR
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'appeals:mpr_letter' %}">Covering Letter</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'appeals:income_tax_mpr' %}">Income Tax Proforma</a></li>
+                    <li><a class="dropdown-item" href="{% url 'appeals:sales_tax_mpr' %}">Sales Tax Proforma</a></li>
+                </ul>
+            </li>
+            {% endif %}
             {% if user.can_view_logs %}
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}"

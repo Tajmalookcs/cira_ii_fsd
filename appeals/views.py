@@ -1,5 +1,6 @@
 import re
-from datetime import timedelta
+from datetime import date, timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
@@ -11,7 +12,8 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from accounts.decorators import can_add_required, can_delete_required, can_edit_required
+from accounts.decorators import (admin_required, can_add_required,
+                                 can_delete_required, can_edit_required)
 from core.models import AuditLog
 from core.utils import diff, log_action, snapshot
 
@@ -76,6 +78,145 @@ REGISTERS = {
         "section_branch": "Income Tax / Appeals-II, Faisalabad",
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# Monthly Performance Report
+# ---------------------------------------------------------------------------
+#: The office financial year runs 1 July to 30 June, so the proforma's
+#: "upto preceding month" column counts from 1 July of the year in question.
+FY_START_MONTH = 7
+
+#: Age buckets shared by both aging tables on the proforma, in months.
+AGE_BUCKETS = [
+    ("3 Months Old", 0, 3),
+    ("4 to 6 Months Old", 3, 6),
+    ("7 to 9 Months Old", 6, 9),
+    ("10 to 12 Months Old", 9, 12),
+    ("More than 12 months Old", 12, None),
+]
+
+
+def fy_start(year, month):
+    """1 July of the financial year that the given month falls in."""
+    return date(year if month >= FY_START_MONTH else year - 1, FY_START_MONTH, 1)
+
+
+def month_bounds(year, month):
+    """First day of the month, and the first day of the month after it."""
+    start = date(year, month, 1)
+    nxt = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    return start, nxt
+
+
+def _millions(value):
+    """The proforma states every amount in millions."""
+    return (Decimal(value or 0) / Decimal(1000000)).quantize(Decimal("0.001"))
+
+
+def _months_between(start, end):
+    """Whole months from start to end, the way the office counts age."""
+    if not start or not end:
+        return None
+    months = (end.year - start.year) * 12 + (end.month - start.month)
+    if end.day < start.day:
+        months -= 1
+    return max(months, 0)
+
+
+def _age_table(appeals, as_of_getter, amount_field):
+    """Split appeals across AGE_BUCKETS by age at a per-appeal reference date."""
+    rows = [{"label": label, "cases": 0, "revenue": Decimal(0)}
+            for label, _, _ in AGE_BUCKETS]
+    for a in appeals:
+        age = _months_between(a.date_of_institution, as_of_getter(a))
+        if age is None:
+            continue
+        for i, (_, low, high) in enumerate(AGE_BUCKETS):
+            if age >= low and (high is None or age < high):
+                rows[i]["cases"] += 1
+                rows[i]["revenue"] += getattr(a, amount_field) or 0
+                break
+    for r in rows:
+        r["revenue"] = _millions(r["revenue"])
+    return rows
+
+
+def mpr_figures(cfg, year, month):
+    """Everything on the proforma that the register can work out on its own.
+
+    Anything the register does not record - transfers, withdrawals, remand
+    backs, ADRC stays, stay applications and superior court directions - is
+    deliberately absent here and printed as an empty box for the office to
+    fill in by hand.
+    """
+    model = cfg["model"]
+    amount = cfg["amount_field"]
+    decided_on = cfg["decision_date_field"]
+    start, nxt = month_bounds(year, month)
+    fy = fy_start(year, month)
+
+    base = model.objects.all()
+    undecided_at = lambda d: Q(**{f"{decided_on}__isnull": True}) | Q(**{f"{decided_on}__gte": d})
+
+    # Carried in from before the month: filed earlier and still open on day one.
+    opening = base.filter(Q(date_of_institution__lt=start) & undecided_at(start))
+    fresh = base.filter(date_of_institution__gte=start, date_of_institution__lt=nxt)
+
+    decided_month = base.filter(**{f"{decided_on}__gte": start, f"{decided_on}__lt": nxt})
+    decided_fy_before = base.filter(**{f"{decided_on}__gte": fy, f"{decided_on}__lt": start})
+
+    opening_count = opening.count()
+    fresh_count = fresh.count()
+    available = opening_count + fresh_count
+    decided_count = decided_month.count()
+
+    # Still open at the end of the month.
+    pendency = base.filter(Q(date_of_institution__lt=nxt) & undecided_at(nxt))
+
+    sum_of = lambda qs: qs.aggregate(t=Sum(amount))["t"] or 0
+    end_of_month = nxt - timedelta(days=1)
+
+    analysis = []
+    for value, label in model.Decision.choices:
+        if value == model.Decision.PENDING:
+            continue
+        m = decided_month.filter(decision_status=value)
+        f = base.filter(decision_status=value,
+                        **{f"{decided_on}__gte": fy, f"{decided_on}__lt": nxt})
+        analysis.append({
+            "label": label,
+            "month_cases": m.count(), "month_revenue": _millions(sum_of(m)),
+            "fy_cases": f.count(), "fy_revenue": _millions(sum_of(f)),
+        })
+
+    decided_fy = base.filter(**{f"{decided_on}__gte": fy, f"{decided_on}__lt": nxt})
+    return {
+        "period": start,
+        "fy_start": fy,
+        "opening_balance": opening_count,
+        "fresh_filing": fresh_count,
+        "fresh_revenue": _millions(sum_of(fresh)),
+        "available": available,
+        "decided_month": decided_count,
+        "decided_upto_preceding": decided_fy_before.count(),
+        "decided_upto_month": decided_fy_before.count() + decided_count,
+        "decided_revenue_month": _millions(sum_of(decided_month)),
+        "decided_revenue_upto": _millions(sum_of(decided_fy)),
+        "balance_pendency": available - decided_count,
+        "pendency_revenue": _millions(sum_of(pendency)),
+        "decided_ages": _age_table(
+            decided_month.only("pk", "date_of_institution", decided_on, amount),
+            lambda a: getattr(a, decided_on), amount),
+        "pendency_ages": _age_table(
+            pendency.only("pk", "date_of_institution", amount),
+            lambda a: end_of_month, amount),
+        "analysis": analysis,
+        "analysis_total_month": decided_count,
+        "analysis_revenue_month": _millions(sum_of(decided_month)),
+        "analysis_total_fy": decided_fy.count(),
+        "analysis_revenue_fy": _millions(sum_of(decided_fy)),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -315,6 +456,76 @@ def sales_tax_list(request):
 @login_required
 def income_tax_list(request):
     return render(request, "appeals/appeal_list.html", register_context(request, "income"))
+
+
+# ---------------------------------------------------------------------------
+# Monthly Performance Report - Admin / Supervisor only
+# ---------------------------------------------------------------------------
+def _mpr(request, key):
+    cfg = REGISTERS[key]
+    today = timezone.localdate()
+
+    # ?month=YYYY-MM, defaulting to the month just gone, which is the one the
+    # office actually reports on.
+    raw = request.GET.get("month", "").strip()
+    try:
+        year, month = (int(x) for x in raw.split("-"))
+        date(year, month, 1)
+    except (ValueError, TypeError):
+        first = today.replace(day=1)
+        last_month = first - timedelta(days=1)
+        year, month = last_month.year, last_month.month
+
+    # Blank by default, the way the office fills it today. ?fill=1 works out
+    # everything the register can supply and prints the rest as empty boxes.
+    figures = mpr_figures(cfg, year, month) if request.GET.get("fill") == "1" else None
+
+    return render(request, "appeals/mpr.html", {
+        "cfg": cfg,
+        "register": key,
+        "figures": figures,
+        "period": date(year, month, 1),
+        "month_value": "%04d-%02d" % (year, month),
+        "age_buckets": [label for label, _, _ in AGE_BUCKETS],
+        "decision_labels": [l for v, l in cfg["model"].Decision.choices
+                            if v != cfg["model"].Decision.PENDING],
+        "auto_print": request.GET.get("print") == "1",
+    })
+
+
+@login_required
+@admin_required
+def sales_tax_mpr(request):
+    return _mpr(request, "sales")
+
+
+@login_required
+@admin_required
+def income_tax_mpr(request):
+    return _mpr(request, "income")
+
+
+@login_required
+@admin_required
+def mpr_letter(request):
+    """The covering letter that goes on top of the two proformas."""
+    today = timezone.localdate()
+    raw = request.GET.get("month", "").strip()
+    try:
+        year, month = (int(x) for x in raw.split("-"))
+        date(year, month, 1)
+    except (ValueError, TypeError):
+        first = today.replace(day=1)
+        last_month = first - timedelta(days=1)
+        year, month = last_month.year, last_month.month
+    fy = fy_start(year, month)
+    return render(request, "appeals/mpr_letter.html", {
+        "period": date(year, month, 1),
+        "month_value": "%04d-%02d" % (year, month),
+        # The office writes the financial year on the file number as 2026-27.
+        "fy_label": "%d-%02d" % (fy.year, (fy.year + 1) % 100),
+        "auto_print": request.GET.get("print") == "1",
+    })
 
 
 # ---------------------------------------------------------------------------
