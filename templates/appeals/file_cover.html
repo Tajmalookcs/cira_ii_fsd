@@ -234,7 +234,7 @@
         <div style="margin-bottom:4mm;">{{ appeal.tax_year|default:"—" }}</div>
 
         <div><span class="lbl">Decided By:-</span></div>
-        <div style="margin-bottom:4mm;">{{ appeal.officer_name|default:"—" }}</div>
+        <div style="margin-bottom:4mm;">{{ appeal.officer_name|default:"—" }}{% if appeal.officer_designation %}, {{ appeal.officer_designation }}{% endif %}</div>
 
         <div style="margin-bottom:4mm;">
             {{ appeal.zone.name|default:"—" }}{% if appeal.unit %}, {{ appeal.unit.name }}{% endif %}, RTO, Faisalabad

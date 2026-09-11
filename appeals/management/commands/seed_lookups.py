@@ -24,9 +24,13 @@ UNITS_PER_ZONE = 10
 #: Created in every zone in addition to the numbered units.
 EXTRA_UNITS = ["Range-I", "Range-II"]
 
+#: District Tax Offices exist only in these zones; the other three have none.
+DTO_ZONES = ("Lyallpur Zone", "Chenab Zone", "Jhang Zone")
+DTOS_PER_ZONE = 10
+
 
 class Command(BaseCommand):
-    help = "Create the 6 office Zones and their Units (10 per zone)."
+    help = "Create the 6 office Zones and their Units (10 numbered + 2 ranges, plus 10 DTOs in the three DTO zones)."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -69,6 +73,20 @@ class Command(BaseCommand):
                 )
                 if made:
                     units_made += 1
+
+            # District Tax Offices, only in the zones that have them.
+            if zone_name in DTO_ZONES:
+                for d in range(1, DTOS_PER_ZONE + 1):
+                    _, made = Unit.objects.get_or_create(
+                        zone=zone,
+                        name=f"DTO-{d:02d}",
+                        defaults={
+                            "code": f"{zone_code}-D{d:02d}",
+                            "order": units_per_zone + len(EXTRA_UNITS) + d,
+                        },
+                    )
+                    if made:
+                        units_made += 1
 
         self.stdout.write(
             self.style.SUCCESS(

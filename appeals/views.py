@@ -5,7 +5,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum
+from django.db.models import DurationField, ExpressionWrapper, F, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -43,6 +44,11 @@ REGISTERS = {
         "cover_url": "appeals:sales_tax_cover",
         "call_proof_url": "appeals:sales_tax_call_proof",
         "order_sheet_url": "appeals:sales_tax_order_sheet",
+        # Sales Tax only, for now: the office supplied these three formats for
+        # that register alone. The detail template skips any key it cannot find.
+        "receiving_slip_url": "appeals:sales_tax_receiving_slip",
+        "hearing_notice_url": "appeals:sales_tax_hearing_notice",
+        "stay_call_url": "appeals:sales_tax_stay_call",
         "section_branch": "Sales Tax / Appeals-II, Faisalabad",
     },
     "income": {
@@ -54,7 +60,7 @@ REGISTERS = {
         "decision_date_field": "appellate_order_date",
         "search_fields": [
             "ntn", "cnic", "appellant_name",
-            "order_section", "officer_name", "ar_name",
+            "order_section", "officer_name", "officer_designation", "ar_name",
         ],
         "number_hint": "6398/2026",
         "order_date_fields": ["date_of_assessment"],
@@ -70,6 +76,91 @@ REGISTERS = {
         "section_branch": "Income Tax / Appeals-II, Faisalabad",
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# Sorting
+# ---------------------------------------------------------------------------
+#: Column key -> the field list handed to order_by(), ascending. A key that is
+#: not in here is ignored, so a hand-typed ?sort= cannot reach the ORM.
+#: "amount" and "filing" are resolved per register in sort_fields() below,
+#: because the underlying column differs between the two.
+SORTABLE = {
+    "appeal_no": ["year", "serial_no", "serial_suffix"],
+    "instituted": ["date_of_institution"],
+    "appellant": ["appellant_name"],
+    "ntn": ["ntn"],
+    "tax": None,
+    "zone": ["zone__order", "unit__order"],
+    "amount": None,
+    "filing": ["filing_gap"],
+    "decide_by": ["first_expiry_120"],
+    "extension": ["second_expiry_180"],
+    "decision": ["decision_status"],
+    "service": ["service_status"],
+}
+
+DEFAULT_SORT = "appeal_no"
+DEFAULT_DIR = "desc"
+
+
+def sort_fields(key, cfg):
+    """The ascending order_by() list for one column of one register."""
+    if key == "amount":
+        return [cfg["amount_field"]]
+    if key == "tax":
+        return ["tax_period" if cfg["model"] is SalesTaxAppeal else "tax_year"]
+    return SORTABLE.get(key)
+
+
+def apply_sorting(request, qs, cfg):
+    """Order the register by ?sort= and ?dir=, falling back to the default."""
+    key = request.GET.get("sort", "").strip() or DEFAULT_SORT
+    if key not in SORTABLE:
+        key = DEFAULT_SORT
+    direction = request.GET.get("dir", "").strip()
+    if direction not in ("asc", "desc"):
+        direction = DEFAULT_DIR if key == DEFAULT_SORT else "asc"
+
+    fields = sort_fields(key, cfg)
+    if not fields:
+        return qs, DEFAULT_SORT, DEFAULT_DIR
+
+    if key == "filing":
+        # Days taken to file. The clock starts at the service date when there is
+        # one, otherwise at the order date, so mirror that in the database.
+        qs = qs.annotate(
+            filing_gap=ExpressionWrapper(
+                F("date_of_institution") - Coalesce(
+                    F("date_of_service"), F(cfg["order_date_fields"][0])
+                ),
+                output_field=DurationField(),
+            )
+        )
+
+    # Nulls last in both directions, so empty cells never head the register.
+    if direction == "desc":
+        order = [F(f).desc(nulls_last=True) for f in fields]
+    else:
+        order = [F(f).asc(nulls_last=True) for f in fields]
+    return qs.order_by(*order), key, direction
+
+
+def sort_columns(request, cfg, current_key, current_dir):
+    """What the template needs to draw each heading: link target and arrow."""
+    out = {}
+    for key in SORTABLE:
+        if not sort_fields(key, cfg):
+            continue
+        active = key == current_key
+        # Clicking the active column flips it; a new column starts ascending.
+        out[key] = {
+            "key": key,
+            "active": active,
+            "dir": current_dir if active else "",
+            "next_dir": "desc" if (active and current_dir == "asc") else "asc",
+        }
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -168,11 +259,19 @@ def register_context(request, key):
     qs = apply_filters(request, cfg)
 
     totals = qs.aggregate(total=Sum(cfg["amount_field"]))
+    qs, sort_key, sort_dir = apply_sorting(request, qs, cfg)
+
     paginator = Paginator(qs, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page"))
 
     params = request.GET.copy()
     params.pop("page", None)
+
+    # Everything except the paging and sorting keys, so a heading link keeps the
+    # filters the clerk has already set.
+    sort_params = params.copy()
+    sort_params.pop("sort", None)
+    sort_params.pop("dir", None)
 
     return {
         "cfg": cfg,
@@ -186,6 +285,10 @@ def register_context(request, key):
         "decision_choices": cfg["model"].Decision.choices,
         "service_choices": cfg["model"]._meta.get_field("service_status").choices,
         "querystring": params.urlencode(),
+        "sort_querystring": sort_params.urlencode(),
+        "sort_key": sort_key,
+        "sort_dir": sort_dir,
+        "sort_cols": sort_columns(request, cfg, sort_key, sort_dir),
         "filters": {
             "q": request.GET.get("q", ""),
             "zone": request.GET.get("zone", ""),
@@ -284,6 +387,61 @@ def _call_proof(request, key, pk):
             "today": timezone.localdate(),
         },
     )
+
+
+def _sales_letter(request, template, pk, extra=None):
+    """Render one of the Sales Tax letter formats supplied by the office."""
+    cfg = REGISTERS["sales"]
+    appeal = get_object_or_404(
+        cfg["model"].objects.select_related("zone", "unit"), pk=pk
+    )
+    context = {
+        "appeal": appeal,
+        "cfg": cfg,
+        "register": "sales",
+        "today": timezone.localdate(),
+    }
+    if extra:
+        context.update(extra(appeal))
+    return render(request, template, context)
+
+
+def _hearing_notice_subject(appeal):
+    """Subject of the hearing notice, naming the order being appealed."""
+    oio = appeal.oio_no or "____"
+    dated = f" dated {appeal.oio_date:%d-%b-%y}" if appeal.oio_date else ""
+    officer = appeal.passing_officer_name.strip() or "the officer concerned"
+    where = ", ".join(
+        part for part in (
+            appeal.unit.name if appeal.unit_id else "",
+            appeal.zone.name if appeal.zone_id else "",
+        ) if part
+    )
+    passed_by = f" passed by the {officer}" + (f", {where}" if where else "")
+    return (
+        f"Hearing in appeal filed against Sales Tax Order in Original No. {oio}"
+        f"{dated}{passed_by}"
+    )
+
+
+@login_required
+def sales_tax_receiving_slip(request, pk):
+    return _sales_letter(request, "appeals/order_receiving_slip.html", pk)
+
+
+@login_required
+def sales_tax_hearing_notice(request, pk):
+    return _sales_letter(
+        request,
+        "appeals/hearing_notice.html",
+        pk,
+        extra=lambda appeal: {"subject": _hearing_notice_subject(appeal)},
+    )
+
+
+@login_required
+def sales_tax_stay_call(request, pk):
+    return _sales_letter(request, "appeals/stay_call_notice.html", pk)
 
 
 def _order_sheet(request, key, pk):
@@ -536,6 +694,7 @@ INCOME_COLUMNS = [
     ("Revenue Involved", lambda a: a.revenue_involved),
     ("Date of Assessment", lambda a: a.date_of_assessment),
     ("Name of Officer", lambda a: a.officer_name),
+    ("Designation of Officer", lambda a: a.officer_designation),
     ("Issues Involved", lambda a: a.issues_involved),
     ("Date of Service", lambda a: a.date_of_service),
     ("Days Taken to File", lambda a: a.days_taken_to_file),

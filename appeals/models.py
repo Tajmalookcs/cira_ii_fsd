@@ -395,6 +395,11 @@ class IncomeTaxAppeal(BaseAppeal):
     )
     date_of_assessment = models.DateField("Date of Assessment", null=True, blank=True)
     officer_name = models.CharField("Name of Officer", max_length=150, blank=True)
+    # Held apart from the name so the register can be sorted and filtered by
+    # rank. Stored as the office writes it: IRO, ACIR, DCIR, Addl. CIR.
+    officer_designation = models.CharField(
+        "Designation of Officer", max_length=50, blank=True
+    )
     issues_involved = models.TextField("Issues Involved", blank=True)
 
     appellate_order_date = models.DateField("Date of Appellate Order", null=True, blank=True)

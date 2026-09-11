@@ -3,6 +3,31 @@
 
 {% block title %}{{ cfg.label }} Appeals{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Sortable register headings. The arrow sits on the same line as the label
+       so a heading never grows taller than it already was. */
+    .sort-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: inherit;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .sort-link:hover { color: inherit; text-decoration: underline; }
+    .sort-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+    .num .sort-link { justify-content: flex-end; }
+    .sort-icon { font-size: 11px; line-height: 1; flex: none; }
+    /* The idle arrows stay faint until the heading is hovered, so the active
+       column is the one that reads as sorted. */
+    .sort-icon-idle { opacity: .28; }
+    .sort-link:hover .sort-icon-idle { opacity: .7; }
+    .sort-active .sort-icon { opacity: 1; }
+    @media print { .sort-icon { display: none; } }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
     <div>
@@ -128,18 +153,18 @@
         <table class="table table-register table-hover mb-0">
             <thead>
                 <tr>
-                    <th>Appeal No.</th>
-                    <th>Instituted</th>
-                    <th>Appellant</th>
-                    <th>NTN</th>
-                    {% if register == "sales" %}<th>Tax Period</th>{% else %}<th>Tax Year</th>{% endif %}
-                    <th>Zone / Unit</th>
-                    <th class="num">{{ cfg.amount_label }}</th>
-                    <th>Filing<br><small style="font-weight:400;opacity:.8;">30 days</small></th>
-                    <th>Decide By<br><small style="font-weight:400;opacity:.8;">120 days</small></th>
-                    <th>Extension<br><small style="font-weight:400;opacity:.8;">180 days</small></th>
-                    <th>Decision</th>
-                    <th>Service</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.appeal_no label="Appeal No." sub="" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.instituted label="Instituted" sub="" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.appellant label="Appellant" sub="" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.ntn label="NTN" sub="" %}</th>
+                    {% if register == "sales" %}<th>{% include "appeals/_sort_th.html" with col=sort_cols.tax label="Tax Period" %}</th>{% else %}<th>{% include "appeals/_sort_th.html" with col=sort_cols.tax label="Tax Year" %}</th>{% endif %}
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.zone label="Zone / Unit" sub="" %}</th>
+                    <th class="num">{% include "appeals/_sort_th.html" with col=sort_cols.amount label=cfg.amount_label %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.filing label="Filing" sub="30 days" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.decide_by label="Decide By" sub="120 days" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.extension label="Extension" sub="180 days" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.decision label="Decision" sub="" %}</th>
+                    <th>{% include "appeals/_sort_th.html" with col=sort_cols.service label="Service" sub="" %}</th>
                     <th class="no-print"></th>
                 </tr>
             </thead>

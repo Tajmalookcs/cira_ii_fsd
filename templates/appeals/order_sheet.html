@@ -171,7 +171,7 @@
                         have filed an appeal against the assessment order passed under
                         section {{ appeal.order_section|default:"____" }}
                         dated {{ appeal.date_of_assessment|date:"d-M-y"|default:"____" }}
-                        passed by the {{ appeal.officer_name|default:"____" }}
+                        passed by the {{ appeal.officer_name|default:"____" }}{% if appeal.officer_designation %}, {{ appeal.officer_designation }}{% endif %}
                         {% if appeal.tax_year %}for Tax Year {{ appeal.tax_year }}{% endif %}.
                     {% endif %}
                 </td>

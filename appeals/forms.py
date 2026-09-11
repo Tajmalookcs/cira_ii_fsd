@@ -121,7 +121,8 @@ class IncomeTaxAppealForm(AppealFormBase):
             "appellant_name", "address_line_1", "address_line_2", "city", "contact_no",
             "tax_year", "order_section", "zone", "unit",
             "income_assessed", "revenue_involved",
-            "date_of_assessment", "date_of_service", "officer_name", "issues_involved",
+            "date_of_assessment", "date_of_service", "officer_name", "officer_designation",
+            "issues_involved",
             "ar_name", "ar_type", "ar_registration_no", "ar_contact_no",
             "ar_address", "ar_city",
             "appellate_order_date", "decision_status",
@@ -144,6 +145,8 @@ class IncomeTaxAppealForm(AppealFormBase):
             "revenue_involved": forms.NumberInput(attrs=MONEY),
             "date_of_assessment": forms.DateInput(attrs=DATE_ATTRS, format="%Y-%m-%d"),
             "officer_name": forms.TextInput(attrs=TEXT),
+            "officer_designation": forms.TextInput(
+                attrs={**TEXT, "placeholder": "IRO / ACIR / DCIR / Addl. CIR"}),
             "issues_involved": forms.Textarea(attrs=AREA),
             "city": forms.TextInput(attrs=TEXT),
             "date_of_service": forms.DateInput(attrs=DATE_ATTRS, format="%Y-%m-%d"),

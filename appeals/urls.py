@@ -15,6 +15,12 @@ urlpatterns = [
          name="sales_tax_call_proof"),
     path("sales-tax/<int:pk>/order-sheet/", views.sales_tax_order_sheet,
          name="sales_tax_order_sheet"),
+    path("sales-tax/<int:pk>/receiving-slip/", views.sales_tax_receiving_slip,
+         name="sales_tax_receiving_slip"),
+    path("sales-tax/<int:pk>/hearing-notice/", views.sales_tax_hearing_notice,
+         name="sales_tax_hearing_notice"),
+    path("sales-tax/<int:pk>/stay-call/", views.sales_tax_stay_call,
+         name="sales_tax_stay_call"),
     path("sales-tax/<int:pk>/edit/", views.sales_tax_update, name="sales_tax_update"),
     path("sales-tax/<int:pk>/delete/", views.sales_tax_delete, name="sales_tax_delete"),
     # Income Tax register

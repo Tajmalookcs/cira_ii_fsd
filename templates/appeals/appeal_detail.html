@@ -149,6 +149,7 @@
                     <div class="detail-row"><dt>Order Section</dt><dd>{{ appeal.order_section|default:"—" }}</dd></div>
                     <div class="detail-row"><dt>Date of Assessment</dt><dd>{{ appeal.date_of_assessment|date:"d-m-Y"|default:"—" }}</dd></div>
                     <div class="detail-row"><dt>Name of Officer</dt><dd>{{ appeal.officer_name|default:"—" }}</dd></div>
+                    <div class="detail-row"><dt>Designation</dt><dd>{{ appeal.officer_designation|default:"—" }}</dd></div>
                     <div class="detail-row">
                         <dt>Income Assessed</dt>
                         <dd class="fw-bold">Rs. {{ appeal.income_assessed|floatformat:0|intcomma }}</dd>
@@ -199,6 +200,36 @@
                             <small>Opening noting on 8.5&times;13 folio, ruled for hearings</small>
                         </span>
                     </a>
+
+                    {% if cfg.receiving_slip_url %}
+                    <a href="{% url cfg.receiving_slip_url appeal.pk %}" target="_blank" class="doc-btn">
+                        <i class="bi bi-card-checklist"></i>
+                        <span>
+                            <strong>Order Receiving Slip</strong>
+                            <small>Acknowledgment under section 56 for the collected order</small>
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if cfg.hearing_notice_url %}
+                    <a href="{% url cfg.hearing_notice_url appeal.pk %}" target="_blank" class="doc-btn">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>
+                            <strong>1st Hearing Notice</strong>
+                            <small>Notice to the appellant fixing the first hearing</small>
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if cfg.stay_call_url %}
+                    <a href="{% url cfg.stay_call_url appeal.pk %}" target="_blank" class="doc-btn">
+                        <i class="bi bi-hourglass-split"></i>
+                        <span>
+                            <strong>Stay Call Notice</strong>
+                            <small>Call notice on a stay adjournment or early hearing request</small>
+                        </span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
