@@ -36,6 +36,15 @@
             right: 10mm;
             font-size: 12px;
             letter-spacing: .3px;
+            text-align: right;
+        }
+        /* Whether the appeal was filed within the 30 days allowed, and by how
+           much it missed if not. The Income Tax cover carries the same line. */
+        .appeal-ref .ref-late {
+            margin-top: 1.5mm;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: underline;
         }
 
         .doc-title { text-align: center; margin: 4mm 0 5mm; }
@@ -116,7 +125,18 @@
 
 {% if register == "sales" %}
     {# ============ Sales Tax: framed, as the office's own cover ============ #}
-    <div class="appeal-ref">{{ appeal.appeal_no }}</div>
+    <div class="appeal-ref">
+        <div>{{ appeal.appeal_no }}</div>
+        <div class="ref-late">
+            {% if appeal.filing_dates_inconsistent %}
+                CHECK DATES
+            {% elif appeal.filed_late %}
+                LATE:- {{ appeal.filing_delay_days }}-DAYS
+            {% elif appeal.days_taken_to_file is not None %}
+                IN TIME:- {{ appeal.days_taken_to_file }}-DAYS
+            {% endif %}
+        </div>
+    </div>
 
     <div class="doc-title">
         <div class="line1">Sales Tax</div>
@@ -154,7 +174,9 @@
 
         <div class="vs">VS</div>
 
-        <div class="row">{{ appeal.passing_officer_name|default:"—" }}</div>
+        <div class="row">
+            {{ appeal.passing_officer_name|default:"—" }}{% if appeal.unit %}, {{ appeal.unit.name }}{% endif %}{% if appeal.zone %}, {{ appeal.zone.name }}{% endif %}
+        </div>
 
         <div class="row">
             <span class="lbl">Sales Tax Order-in-Original No.</span>{{ appeal.oio_no|default:"—" }}
