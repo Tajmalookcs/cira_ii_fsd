@@ -47,8 +47,13 @@ number all find the record.
 ## File Cover
 `templates/appeals/file_cover.html` reproduces the slip pasted on the physical file
 jacket, one layout per register, matching the office's existing printed covers.
-Opened from the **File Cover** button on the record page; standalone template, A4
-portrait, toolbar hidden when printing. `?print=1` opens the print dialog directly.
+Opened from the **File Cover** button on the record page; standalone template, toolbar hidden when printing. `?print=1` opens the print dialog directly.
+
+Prints on **5 x 8 inch paper, portrait** (`@page { size: 5in 8in; margin: 6mm; }`) -
+A4 was replaced at the office's request. Both layouts were scaled to fit one sheet
+and checked with long appellant names, addresses and AR names. In the browser's
+print dialog, the paper size must be set to 5 x 8 in (or a matching custom size)
+and scaling to 100% / "Actual size", otherwise the cover is shrunk or split.
 
 ## Limitation Rules
 **THREE SEPARATE CLOCKS. Never combine them** - this was got wrong once and corrected
