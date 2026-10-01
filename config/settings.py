@@ -8,6 +8,7 @@ variable CIR_DEBUG=1 before starting the server.
 
 import os
 import secrets
+import socket
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -50,7 +51,18 @@ ALLOWED_HOSTS = [
     "10.10.14.230",     # host PC, office LAN
     "192.168.137.1",    # host PC, mobile hotspot
     "10.10.12.99",      # office data server (planned)
+    "10.10.12.191",     # client PC, office LAN
 ]
+
+# Also accept this PC's own network addresses, so the system answers over the
+# LAN on whichever machine it is installed on without editing this file.
+try:
+    ALLOWED_HOSTS += [
+        ip for ip in socket.gethostbyname_ex(socket.gethostname())[2]
+        if ip not in ALLOWED_HOSTS
+    ]
+except OSError:
+    pass
 
 # Extra hosts can be added at run time without editing this file:
 #   set CIR_ALLOWED_HOSTS=10.10.14.55,10.10.14.60
