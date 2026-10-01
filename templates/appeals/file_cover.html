@@ -9,10 +9,10 @@
 
            The two registers keep their OWN long-standing layouts - they are
            deliberately not made to match each other. */
-        /* Printed on 5 x 8 inch stock, portrait (127 x 203.2 mm). Everything is
-           scaled down from the old A4 layout so each cover still fits on a
-           single sheet; tested with long names and addresses. */
-        @page { size: 5in 8in; margin: 6mm; }
+        /* Printed on 8 x 5 inch stock, landscape (203.2 x 127 mm). The sheet
+           is wide but short, so vertical spacing is kept tight to fit each
+           cover on a single page; tested with long names and addresses. */
+        @page { size: 8in 5in; margin: 5mm; }
 
         * { box-sizing: border-box; }
 
@@ -27,17 +27,17 @@
 
         /* On screen the sheet previews at the real paper size. */
         .sheet {
-            width: 5in;
-            min-height: 8in;
+            width: 8in;
+            min-height: 5in;
             margin: 0 auto;
             background: #fff;
-            padding: 6mm;
+            padding: 5mm;
             position: relative;
         }
 
         .appeal-ref {
             position: absolute;
-            top: 1.5mm;
+            top: 4mm;
             right: 6mm;
             font-size: 9.5px;
             letter-spacing: .2px;
@@ -52,24 +52,24 @@
             text-decoration: underline;
         }
 
-        .doc-title { text-align: center; margin: 4mm 0 5mm; }
-        .doc-title .line1 { font-size: 20px; font-weight: 700; line-height: 1.15; }
-        .doc-title .line2 { font-size: 16px; font-weight: 700; text-decoration: underline; }
+        .doc-title { text-align: center; margin: 0 0 2.5mm; }
+        .doc-title .line1 { font-size: 18px; font-weight: 700; line-height: 1.15; }
+        .doc-title .line2 { font-size: 14px; font-weight: 700; text-decoration: underline; }
 
-        .frame { border: 1px solid #000; padding: 5mm 4mm; }
+        .frame { border: 1px solid #000; padding: 3mm 5mm; }
 
-        .row { margin-bottom: 4.5mm; line-height: 1.45; }
+        .row { margin-bottom: 2mm; line-height: 1.35; }
         .lbl { font-weight: 700; }
         .val { text-decoration: underline; }
 
-        .vs { text-align: center; font-weight: 700; margin: 3mm 0; letter-spacing: 1px; }
+        .vs { text-align: center; font-weight: 700; margin: 1mm 0; letter-spacing: 1px; }
 
-        .received { text-align: center; font-weight: 700; margin: 5mm 0 4mm; }
+        .received { text-align: center; font-weight: 700; margin: 2.5mm 0 2mm; }
 
-        table.limits { width: 100%; border-collapse: collapse; margin: 4mm 0 5mm; }
+        table.limits { width: 100%; border-collapse: collapse; margin: 2mm 0 2.5mm; }
         table.limits td {
             border: 1px solid #000;
-            padding: 2.2mm;
+            padding: 1.2mm 2mm;
             font-weight: 700;
             vertical-align: middle;
         }
@@ -84,17 +84,17 @@
             gap: 5mm;
             margin-bottom: 2mm;
         }
-        .it-top .left { line-height: 1.6; }
-        .it-top .right { line-height: 1.6; text-align: left; }
+        .it-top .left { line-height: 1.4; }
+        .it-top .right { line-height: 1.4; text-align: left; }
         .late { font-weight: 700; font-size: 14px; text-decoration: underline; }
-        .it-line { line-height: 1.75; }
+        .it-line { line-height: 1.4; }
         .it-line .lbl { font-weight: 700; }
         .it-indent { padding-left: 12mm; }
-        .it-gap { margin-bottom: 5mm; }
+        .it-gap { margin-bottom: 2mm; }
 
         /* Screen-only toolbar */
         .toolbar {
-            max-width: 5in;
+            max-width: 8in;
             margin: 0 auto 12px;
             display: flex;
             gap: 8px;
@@ -251,7 +251,7 @@
         <div class="line2">APPEALS-II (IRIS)</div>
     </div>
 
-    <div class="it-line" style="text-align:center;margin-bottom:6mm;">
+    <div class="it-line" style="text-align:center;margin-bottom:3mm;">
         <div><span class="lbl">A.No.</span> <span class="val">{{ appeal.appeal_no }}</span></div>
         <div><span class="lbl">Dated.</span> {{ appeal.date_of_institution|date:"d-M-Y" }}</div>
         <div><span class="lbl">U/s.</span> <span class="val">{{ appeal.order_section|default:"—" }}</span></div>
@@ -278,7 +278,7 @@
         <div class="it-indent"><strong>{{ appeal.appellant_name }}</strong></div>
         <div class="it-indent">{{ appeal.address|default:"—" }}{% if appeal.city %}, {{ appeal.city }}{% endif %}</div>
         {% if appeal.ar_name %}
-        <div style="margin-top:5mm;"><span class="lbl">Advocate:-</span> {{ appeal.ar_name }}</div>
+        <div style="margin-top:2.5mm;"><span class="lbl">Advocate:-</span> {{ appeal.ar_name }}</div>
         {% endif %}
     </div>
 {% endif %}
