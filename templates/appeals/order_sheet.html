@@ -166,7 +166,7 @@
                         have filed an appeal against Sales Tax Order-in-Original
                         No.{{ appeal.oio_no|default:"____" }}
                         dated {{ appeal.oio_date|date:"d-M-y"|default:"____" }}
-                        passed by the {{ appeal.passing_officer_name|default:"____" }}.
+                        passed by the {{ appeal.passing_officer_name|default:"____" }}{% if appeal.passing_officer_designation %}, {{ appeal.passing_officer_designation }}{% endif %}.
                     {% else %}
                         have filed an appeal against the assessment order passed under
                         section {{ appeal.order_section|default:"____" }}

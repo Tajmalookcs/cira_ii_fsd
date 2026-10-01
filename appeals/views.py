@@ -863,6 +863,7 @@ SALES_COLUMNS = [
     ("Unit", lambda a: a.unit.name if a.unit else ""),
     ("Zone", lambda a: a.zone.name if a.zone else ""),
     ("Passing Officer Name", lambda a: a.passing_officer_name),
+    ("Passing Officer Designation", lambda a: a.passing_officer_designation),
     ("Tax Period", lambda a: a.tax_period),
     ("Order-In-Original No.", lambda a: a.oio_no),
     ("Order-In-Original Date", lambda a: a.oio_date),

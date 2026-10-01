@@ -82,7 +82,8 @@
                         <div class="col-md-6">{% include "appeals/_field.html" with field=form.date_of_service %}</div>
                         <div class="col-md-6">{% include "appeals/_field.html" with field=form.section %}</div>
                         <div class="col-md-6">{% include "appeals/_field.html" with field=form.sales_tax_involved %}</div>
-                        <div class="col-12">{% include "appeals/_field.html" with field=form.passing_officer_name %}</div>
+                        <div class="col-md-8">{% include "appeals/_field.html" with field=form.passing_officer_name %}</div>
+                        <div class="col-md-4">{% include "appeals/_field.html" with field=form.passing_officer_designation %}</div>
                         {% else %}
                         <div class="col-md-6">{% include "appeals/_field.html" with field=form.order_section %}</div>
                         <div class="col-md-6">{% include "appeals/_field.html" with field=form.date_of_assessment %}</div>

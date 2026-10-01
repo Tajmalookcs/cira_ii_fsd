@@ -71,6 +71,7 @@ class SalesTaxAppealForm(AppealFormBase):
             "serial_no", "date_of_institution", "ntn", "strn",
             "appellant_name", "address", "city", "contact_no",
             "sales_tax_involved", "zone", "unit", "passing_officer_name",
+            "passing_officer_designation",
             "tax_period", "tax_year", "oio_no", "oio_date", "date_of_service",
             "ar_name", "ar_type", "ar_registration_no", "ar_contact_no",
             "ar_address", "ar_city",
@@ -90,6 +91,8 @@ class SalesTaxAppealForm(AppealFormBase):
             "zone": forms.Select(attrs={**SELECT, "id": "id_zone"}),
             "unit": forms.Select(attrs={**SELECT, "id": "id_unit"}),
             "passing_officer_name": forms.TextInput(attrs=TEXT),
+            "passing_officer_designation": forms.TextInput(
+                attrs={**TEXT, "placeholder": "IRO / ACIR / DCIR / Addl. CIR"}),
             "tax_period": forms.TextInput(attrs={**TEXT, "placeholder": "e.g. 07/2024 to 06/2025"}),
             "oio_no": forms.TextInput(attrs=TEXT),
             "oio_date": forms.DateInput(attrs=DATE_ATTRS, format="%Y-%m-%d"),

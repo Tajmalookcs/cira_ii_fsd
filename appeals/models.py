@@ -329,6 +329,10 @@ class SalesTaxAppeal(BaseAppeal):
         "Sales Tax Involved", max_digits=18, decimal_places=2, default=0
     )
     passing_officer_name = models.CharField("Passing Officer Name", max_length=150, blank=True)
+    # Stored as the office writes it: IRO, ACIR, DCIR, Addl. CIR, DCIR (PRA).
+    passing_officer_designation = models.CharField(
+        "Passing Officer Designation", max_length=60, blank=True
+    )
     tax_period = models.CharField("Tax Period", max_length=50, blank=True)
 
     oio_no = models.CharField("Order-In-Original No.", max_length=100, blank=True)

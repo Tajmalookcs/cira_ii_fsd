@@ -140,6 +140,7 @@
                     <div class="detail-row"><dt>Section</dt><dd>{{ appeal.section|default:"—" }}</dd></div>
                     <div class="detail-row"><dt>Tax Period</dt><dd>{{ appeal.tax_period|default:"—" }}</dd></div>
                     <div class="detail-row"><dt>Passing Officer</dt><dd>{{ appeal.passing_officer_name|default:"—" }}</dd></div>
+                    <div class="detail-row"><dt>Designation</dt><dd>{{ appeal.passing_officer_designation|default:"—" }}</dd></div>
                     <div class="detail-row">
                         <dt>Sales Tax Involved</dt>
                         <dd class="fw-bold">Rs. {{ appeal.sales_tax_involved|floatformat:0|intcomma }}</dd>
