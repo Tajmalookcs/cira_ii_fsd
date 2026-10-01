@@ -3,7 +3,7 @@ setlocal
 REM ============================================================
 REM  Commissioner (Appeals-II), Inland Revenue
 REM
-REM  Saves your GitHub access token so "Update from GitHub.bat"
+REM  Saves your GitHub access token so "update.bat"
 REM  can download updates without asking you to sign in.
 REM
 REM  The token is typed by you and written straight to
@@ -59,7 +59,7 @@ if defined TOKEN (
 )
 
 echo.
-echo   You can now run "Update from GitHub.bat".
+echo   You can now run "update.bat".
 echo.
 echo   Keep this file private. Anyone who can read it can reach
 echo   your GitHub account. If it is ever exposed, revoke the

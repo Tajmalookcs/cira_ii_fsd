@@ -174,6 +174,23 @@ if not exist "venv\Scripts\python.exe" (
     )
 )
 
+REM Django 6 needs Python 3.12. A venv built with an older Python
+REM fails at the package step, so check it and rebuild if needed.
+venv\Scripts\python.exe -c "import sys; sys.exit(0 if sys.version_info[:2] == (3, 12) else 1)" >nul 2>&1
+if errorlevel 1 (
+    echo   The Python environment is not Python 3.12 - rebuilding it...
+    rmdir /s /q venv
+    py -3.12 -m venv venv >nul 2>&1
+    venv\Scripts\python.exe -c "import sys; sys.exit(0 if sys.version_info[:2] == (3, 12) else 1)" >nul 2>&1
+    if errorlevel 1 (
+        echo   ERROR: Python 3.12 is needed but was not found.
+        echo   Install it from https://www.python.org/downloads/
+        echo   then run this file again.
+        pause
+        exit /b 1
+    )
+)
+
 echo   Installing required packages...
 venv\Scripts\python.exe -m pip install --quiet --upgrade pip
 venv\Scripts\python.exe -m pip install --quiet -r requirements.txt
@@ -188,10 +205,27 @@ if exist "db.sqlite3" (
     if not exist "backups" mkdir "backups"
     for /f %%d in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "STAMP=%%d"
     copy /y "db.sqlite3" "backups\db_before_update_!STAMP!.sqlite3" >nul
+    if not exist "backups\db_before_update_!STAMP!.sqlite3" (
+        echo.
+        echo   ERROR: the database could not be backed up, so it was
+        echo   not changed. Check that the disk is not full.
+        pause
+        exit /b 1
+    )
     echo   Database backed up to backups\db_before_update_!STAMP!.sqlite3
 )
 
-echo   Applying database changes...
+REM List the database changes this update brings, before applying them.
+set "PENDING=0"
+for /f "tokens=2" %%m in ('venv\Scripts\python.exe manage.py showmigrations --plan 2^>nul ^| findstr /c:"[ ]"') do (
+    set /a PENDING+=1
+    echo     database change: %%m
+)
+if "!PENDING!"=="0" (
+    echo   Database is already up to date.
+) else (
+    echo   Applying !PENDING! database change^(s^)...
+)
 venv\Scripts\python.exe manage.py migrate --noinput
 if errorlevel 1 (
     echo.
