@@ -175,7 +175,7 @@
         <div class="vs">VS</div>
 
         <div class="row">
-            {{ appeal.passing_officer_name|default:"—" }}{% if appeal.unit %}, {{ appeal.unit.name }}{% endif %}{% if appeal.zone %}, {{ appeal.zone.name }}{% endif %}
+            {{ appeal.passing_officer_name|default:"—" }}{% if appeal.passing_officer_designation %}, {{ appeal.passing_officer_designation }}{% endif %}{% if appeal.unit %}, {{ appeal.unit.name }}{% endif %}{% if appeal.zone %}, {{ appeal.zone.name }}{% endif %}
         </div>
 
         <div class="row">
